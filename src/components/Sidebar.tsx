@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Database, LineChart, Terminal, Brain, AlertCircle, GitBranch, Table2, Key, BarChart3, Layers, Clock } from "lucide-react";
+//import DataViolationsPopup from "./DataViolationsPopup"; // Import the violations popup
 
 // Define interfaces
 interface DataViolationsResponse {
@@ -15,7 +16,7 @@ interface SidebarProps {
   onModuleChange: (module: string) => void;
   subModule?: string;
   onSubModuleChange?: (subModule: string) => void;
-  triggerDataProfiling: () => void;
+  triggerDataProfiling: () => void;  // Ensure this is definitely a function
 }
 
 interface DataProfilingOverviewProps {
@@ -39,7 +40,6 @@ export function Sidebar({
   const [violationsCount, setViolationsCount] = useState(0);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [sliderValue, setSliderValue] = useState(50);
-  const [expandedModule, setExpandedModule] = useState<string | null>(null);
 
   // Fetch violations count
   useEffect(() => {
@@ -56,36 +56,22 @@ export function Sidebar({
       .catch((err) => console.error("Error fetching violations:", err));
   }, []);
 
-  // Restructured main modules
   const mainModules = [
-    { 
-      id: "sigmaDQ", 
-      name: "SigmaDQ", 
-      icon: Database,
-      subModules: [
-        { 
-          id: "dataProfiler", 
-          name: "Data Profiling", 
-          subItems: [
-            "Data Quality",
-            "Data Frequency", 
-            "Data Granularity",
-            "Statistical Analysis"
-          ]
-        },
-        { 
-          id: "keyRelationships", 
-          name: "Key Relationships", 
-          subItems: [
-            "Fact Table And Dimension Table",
-            "Primary Key Foreign Key Relation"
-          ]
-        },
-        { id: "anomalyDetection", name: "Anomaly Detection", subItems: [] },
-        { id: "sqlGenerator", name: "SQL Generator", subItems: [] },
-        { id: "nlp", name: "NLP", subItems: [] }
-      ]
-    }
+    { id: "dataProfiler", name: "Data Profiling", icon: Database },
+    { id: "anomaly", name: "Anomaly Detection", icon: LineChart },
+    { id: "sqlGenerator", name: "SQL Generator", icon: Terminal },
+    { id: "nlp", name: "Natural Language Processing", icon: Brain },
+  ];
+
+  const dataProfilingSubModules = [
+    "Data Quality",
+    "Data Frequency",
+    "Column Correlation",
+    "Fact Table And Dimension Table",
+    "Primary Key Foreign Key Relation",
+    "Statistical Analysis",
+    "Data Granularity",
+    "Data Analysis Dashboard",
   ];
 
   // Handle slider change
@@ -93,11 +79,18 @@ export function Sidebar({
     setSliderValue(parseInt(e.target.value, 10));
   };
 
-  // Handle module toggle
-  const toggleModule = (moduleId: string) => {
-    setExpandedModule(expandedModule === moduleId ? null : moduleId);
+  // Handle module change - FIX: Make sure we're handling this correctly
+  const handleModuleClick = (moduleId: string) => {
+    console.log('Before module change:', activeModule);
+    onModuleChange(moduleId);
+    console.log('After module change:', moduleId);
+    
+    if (moduleId === "dataProfiler" && typeof triggerDataProfiling === 'function') {
+      console.log("Attempting to trigger data profiling");
+      triggerDataProfiling();
+      console.log("Data profiling trigger attempted");
+    }
   };
-
   return (
     <>
       {/* Sidebar */}
@@ -127,12 +120,8 @@ export function Sidebar({
           <ul className="p-2">
             {mainModules.map((module) => (
               <li key={module.id}>
-                {/* Main Module Button */}
                 <button
-                  onClick={() => {
-                    onModuleChange(module.id);
-                    toggleModule(module.id);
-                  }}
+                  onClick={() => handleModuleClick(module.id)}
                   className={`w-full flex items-center p-2 rounded-md mb-1 ${
                     activeModule === module.id ? "bg-blue-600" : "hover:bg-gray-700"
                   }`}
@@ -140,53 +129,31 @@ export function Sidebar({
                   <module.icon className="w-5 h-5 mr-2" />
                   {module.name}
                 </button>
-
-                {/* Expanded Submenu */}
-                {expandedModule === module.id && (
-                  <div className="ml-4 mt-2 space-y-1">
-                    {module.subModules.map((subModule) => (
-                      <div key={subModule.id}>
+                {activeModule === "dataProfiler" && module.id === "dataProfiler" && onSubModuleChange && (
+                  <ul className="ml-4 mt-2 space-y-1">
+                    {dataProfilingSubModules.map((subModuleName) => (
+                      <li key={subModuleName}>
                         <button
                           onClick={() => {
-                            onModuleChange(subModule.id);
-                            if (subModule.subItems.length > 0) {
-                              toggleModule(subModule.id);
+                            if (onSubModuleChange) {
+                              onSubModuleChange(subModuleName);
                             }
                           }}
                           className={`w-full text-left p-2 rounded-md text-sm flex justify-between ${
-                            activeModule === subModule.id ? "bg-gray-700" : "hover:bg-gray-700"
+                            subModule === subModuleName ? "bg-gray-700" : "hover:bg-gray-700"
                           }`}
                         >
-                          {subModule.name}
-                          {subModule.subItems.length > 0 && (
-                            <span className="text-xs">▼</span>
+                          {subModuleName}
+                          {/* Show Red Badge if Violations Exist */}
+                          {subModuleName === "Business Rule Violations" && violationsCount > 0 && (
+                            <span className="bg-red-600 text-white text-xs rounded-full px-2">
+                              {violationsCount}
+                            </span>
                           )}
                         </button>
-
-                        {/* Sub-items */}
-                        {subModule.subItems.length > 0 && (
-                          <div className="ml-4 mt-1 space-y-1">
-                            {subModule.subItems.map((item) => (
-                              <button
-                                key={item}
-                                onClick={() => {
-                                  onModuleChange(subModule.id);
-                                  if (onSubModuleChange) {
-                                    onSubModuleChange(item);
-                                  }
-                                }}
-                                className={`w-full text-left p-2 rounded-md text-sm ${
-                                  subModule === item ? "bg-gray-600" : "hover:bg-gray-700"
-                                }`}
-                              >
-                                {item}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </li>
             ))}
@@ -206,6 +173,8 @@ export function Sidebar({
           </span>
         </button>
       )}
+
+      {/* Data Violations Popup */}
     </>
   );
 }
@@ -364,7 +333,6 @@ export function App() {
   const handleModuleChange = (module: string) => {
     setActiveModule(module);
     
-    // Reset submodule selection
     // Reset submodule selection when changing main modules
     if (module !== "dataProfiler") {
       setSubModule(undefined);
@@ -449,6 +417,3 @@ export function App() {
     </div>
   );
 }
-
-// Export for use in other components or main application
-export default App;
