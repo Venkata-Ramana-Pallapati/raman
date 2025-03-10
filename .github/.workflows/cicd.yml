@@ -22,11 +22,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t dockerhub_username/frontend-demo:latest .
+          docker build -t  ${{ secrets.DOCKER_USERNAME }}/frontend-demo:latest .
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker push dockerhub_username/frontend-demo:latest
+          docker push  ${{ secrets.DOCKER_USERNAME }}/frontend-demo:latest
 
   deploy-to-aks:
     name: Deploy to AKS
