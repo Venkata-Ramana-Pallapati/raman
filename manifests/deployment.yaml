@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend-demo-container
-          image: dockerhub_username/frontend-demo:latest  # Updated with "demo" in the name
+          image: venkat345/ram-frontend:latest  # Updated with "demo" in the name
           ports:
             - containerPort: 80
           env:
